@@ -1,0 +1,31 @@
+
+/*
+ * Copyright (C) lijian2@ucweb.com
+ */
+
+#ifndef __DKINNER_THREAD_POOL_INCLUDE__
+#define __DKINNER_THREAD_POOL_INCLUDE__
+
+#include <vector>
+
+#include "donkey_core.h"
+
+class ThreadPool {
+public:
+  ThreadPool() {
+  }
+  
+  ~ThreadPool() {
+  }
+
+  bool Init(int threads);
+
+  bool CallInThread(deferred_cb_fn cb, void *arg);
+
+private:
+  std::vector<DonkeyWorker>   workers_;
+  sem_t                       sem_;
+  LockQueue<DeferredCb>       que_;
+};
+
+#endif
