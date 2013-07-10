@@ -502,6 +502,4 @@ void DonkeyBaseConnection::ConnectMade() {
 void DonkeyBaseConnection::AddToFreeConn() {
   if (server_)
     server_->FreeConn(this);
-  else
-    delete this; 
 }
