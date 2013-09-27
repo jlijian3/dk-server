@@ -7,7 +7,6 @@
 #include "dk_log.h"
 
 using namespace std;
-using namespace __gnu_cxx; 
 
 log_func_t DKLog::log_func_ = NULL;
 FILE *DKLog::fstream_ = NULL;
@@ -88,7 +87,7 @@ bool DKBaseServer::MakeConnection(int fd,
     return false;
   }
 
-  hash_map<int, DKBaseConnection *>::iterator it = conns_map_.find(conn->get_id());
+  map<int, DKBaseConnection *>::iterator it = conns_map_.find(conn->get_id());
   if (it != conns_map_.end() && it->second != NULL) {
     DKBaseConnection *old_conn = it->second;
     DK_DEBUG("[error] %s: conn_id %d fd %d already exists in conns_map_\n",
@@ -172,7 +171,7 @@ void DKBaseServer::FreeConn(DKBaseConnection *conn) {
     return;
 
  
-  hash_map<int, DKBaseConnection *>::iterator it = conns_map_.find(conn->get_id());
+  map<int, DKBaseConnection *>::iterator it = conns_map_.find(conn->get_id());
 
   if (it == conns_map_.end()) {
     DK_DEBUG("[error] %s: conn_id %d fd %d not exists in conns_map_\n",
@@ -187,7 +186,7 @@ void DKBaseServer::FreeConn(DKBaseConnection *conn) {
 }
 
 DKBaseConnection *DKBaseServer::get_conn(int conn_id) {
-  hash_map<int, DKBaseConnection *>::iterator it = conns_map_.find(conn_id);
+  map<int, DKBaseConnection *>::iterator it = conns_map_.find(conn_id);
   if (it != conns_map_.end())
     return it->second;
   else

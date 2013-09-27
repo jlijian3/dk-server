@@ -15,5 +15,6 @@
 #include "dk_worker.h"
 #include "dk_base_thread.h"
 #include "dk_base_server.h"
+#include "dk_thread_pool.h"
 
 #endif

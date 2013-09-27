@@ -22,7 +22,6 @@
 #include <deque>
 #include <vector>
 #include <map>
-#include <ext/hash_map>
 #include <iostream>
 
 /* event */

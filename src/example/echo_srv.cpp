@@ -5,9 +5,9 @@
 #include <stdio.h>
 
 #include "dk_core.h"
-#include "log.h"
 
 #define RESP_DATA "'HTTP/1.1 200 OK\r\nServer: nginx/0.8.44\r\nContent-length: 5\r\nConnection: keep-alive\r\n\r\nhello"
+#define dlog1 printf
 
 using namespace std;
 
@@ -76,23 +76,15 @@ class MyServer: public DKBaseServer {
   }
 };
 
+static void thread_func(DKBaseThread *thread, void *arg) {
+  printf("threadid:%d %d\n", thread->get_thread_id(), (long)arg);
+}
+
 #define PORT 60006
 
 int main(int argc, char **argv) {
+  DKThreadPool th_pool;
   server = new MyServer();
-
-  int rv = LOGGER->Create("./echo_srv_",
-                      "./echo_srv_debug_", 
-                      true,
-                      true,
-                      3,
-                      1024*1024*1024,
-                      1024*1024*1024);
-  
-  if (rv < 0) {
-    perror("create logger error");
-    exit(1);
-  }
 
   if (!server || !server->Init()) {
     dlog1("new DKBaseServer Init error\n");
@@ -100,6 +92,11 @@ int main(int argc, char **argv) {
   }
   
   dlog1("server start ......\n");
+
+  th_pool.Init(10);
+  for (int i=0; i<10000; i++) {
+    th_pool.CallInThread(thread_func, (void *)i);
+  }
 
   signal(SIGPIPE, SIG_IGN);
   signal(SIGHUP, SIG_IGN);

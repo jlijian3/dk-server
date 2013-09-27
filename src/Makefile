@@ -1,5 +1,5 @@
 OBJECTS=dk_base_server.o dk_base_connection.o dk_http.o dk_util.o \
-				dk_base_thread.o dk_ev_thread.o dk_worker.o thread_pool.o
+				dk_base_thread.o dk_ev_thread.o dk_worker.o dk_thread_pool.o
 
 CXXFLAGS=-g -Wall -D_DONKEY_DEBUG
 
@@ -11,7 +11,7 @@ $(LIB_NAME):$(OBJECTS)
 
 
 SOURCES=dk_base_server.cpp dk_base_connection.cpp dk_http.cpp dk_util.cpp \
-				dk_base_thread.cpp dk_ev_thread.cpp dk_worker.cpp thread_pool.cpp
+				dk_base_thread.cpp dk_ev_thread.cpp dk_worker.cpp dk_thread_pool.cpp
 
 DEPS=.depend
 
@@ -23,4 +23,8 @@ include $(DEPS)
 .PHONY:clean
 clean:
 	rm $(LIB_NAME) $(OBJECTS)
+
+.PHONY:distclean
+distclean:
+	$(MAKE) clean
 	rm $(DEPS)

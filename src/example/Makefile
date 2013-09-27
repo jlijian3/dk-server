@@ -8,8 +8,8 @@ all:$(PROGS)
 
 .PHONY:all
 
-echo_srv:echo_srv.o logbase.o $(LIBS)
-	g++ $(CXXFLAGS) -o echo_srv echo_srv.o logbase.o $(LIBS) $(LDFLAGS)
+echo_srv:echo_srv.o $(LIBS)
+	g++ $(CXXFLAGS) -o echo_srv echo_srv.o $(LIBS) $(LDFLAGS)
 
 http_client:http_client.o $(LIBS)
 	g++ $(CXXFLAGS) -o http_client http_client.o $(LIBS) $(LDFLAGS)

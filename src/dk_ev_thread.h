@@ -6,7 +6,7 @@
 #ifndef __DONKEY_EVENT_THREAD__INCLUDE__
 #define __DONKEY_EVENT_THREAD__INCLUDE__
 
-#include "queue.h"
+#include "dk_queue.h"
 #include "dk_base_thread.h"
 #include "dk_internal.h"
 

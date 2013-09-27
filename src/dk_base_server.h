@@ -81,7 +81,7 @@ private:
 	struct sockaddr_in             sin_;
   std::vector<DKBaseConnection *> free_conns_;
   static unsigned int            current_time_;
-  __gnu_cxx::hash_map<int, DKBaseConnection *> conns_map_;
+  std::map<int, DKBaseConnection *> conns_map_;
   int timeout_;
 };
 
