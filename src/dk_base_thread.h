@@ -8,13 +8,13 @@
 
 #include <pthread.h>
 
-class DonkeyBaseThread {
+class DKBaseThread {
 
 public:
-  DonkeyBaseThread() : thread_id_(0) {
+  DKBaseThread() : thread_id_(0) {
   }
 
-  virtual ~DonkeyBaseThread() {
+  virtual ~DKBaseThread() {
   }
 
   void Create();

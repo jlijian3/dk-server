@@ -6,21 +6,21 @@
 #ifndef __DONKEY_SERVER_INCLUDE__
 #define __DONKEY_SERVER_INCLUDE__
 
-#include "donkey_common.h"
-#include "donkey_ev_thread.h"
+#include "dk_common.h"
+#include "dk_ev_thread.h"
 
 struct event_base;
 struct evconnlistener;
 struct event;
 struct sockaddr_in;
 
-class DonkeyBaseConnection;
+class DKBaseConnection;
 
-class DonkeyServer : public DonkeyEventThread {
+class DKBaseServer : public DKEventThread {
 public:
   enum {FREE_CONNS = 200};
-  DonkeyServer(); 
-  virtual ~DonkeyServer();
+  DKBaseServer(); 
+  virtual ~DKBaseServer();
 
   bool Init();
 
@@ -32,9 +32,9 @@ public:
 
   bool MakeConnection(int fd, const char *host, unsigned short port);  
 
-  void FreeConn(DonkeyBaseConnection *conn);
+  void FreeConn(DKBaseConnection *conn);
 
-  DonkeyBaseConnection *get_conn(int conn_id);
+  DKBaseConnection *get_conn(int conn_id);
 
   int get_conns_map_size() {
     return conns_map_.size();
@@ -56,10 +56,13 @@ protected:
   virtual void ClockCallback() {
   }
 
-  virtual DonkeyBaseConnection *NewConnection();
+  virtual DKBaseConnection *NewConnection();
 
-  virtual void ConnectionMade(DonkeyBaseConnection *conn) {
+  virtual void ConnectionMade(DKBaseConnection *conn) {
   }
+
+private:
+  static void IncomingConnFreeCallback(DKBaseConnection *conn, void *arg);
 
 private:
   static void ListenerCallback(struct evconnlistener *listener,
@@ -76,9 +79,9 @@ private:
 	struct event                  *signal_event_;
 
 	struct sockaddr_in             sin_;
-  std::vector<DonkeyBaseConnection *> free_conns_;
+  std::vector<DKBaseConnection *> free_conns_;
   static unsigned int            current_time_;
-  __gnu_cxx::hash_map<int, DonkeyBaseConnection *> conns_map_;
+  __gnu_cxx::hash_map<int, DKBaseConnection *> conns_map_;
   int timeout_;
 };
 

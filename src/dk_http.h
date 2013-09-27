@@ -6,16 +6,16 @@
 #ifndef __DONKEY_HTTP_INCLUDE__
 #define __DONKEY_HTTP_INCLUDE__
 
-#include "donkey_common.h"
+#include "dk_common.h"
 
-class DonkeyHttpClient;
+class DKHttpClient;
 
-class DonkeyHttpRequest {
+class DKHttpRequest {
 public:
-  DonkeyHttpRequest() : http_req_(NULL), arg_(NULL) {
+  DKHttpRequest() : http_req_(NULL), arg_(NULL) {
   }
 
-  virtual ~DonkeyHttpRequest() {
+  virtual ~DKHttpRequest() {
   }
 
   bool Init(void *arg=NULL) {
@@ -57,12 +57,12 @@ protected:
   void *arg_;
 };
 
-class DonkeyHttpClient {
+class DKHttpClient {
 public: 
-  DonkeyHttpClient() : last_conn_idx_(0) {
+  DKHttpClient() : last_conn_idx_(0) {
   }
   
-  virtual ~DonkeyHttpClient() {
+  virtual ~DKHttpClient() {
     for (size_t i = 0; i < http_conns_.size(); i++) {  
       if (http_conns_[i])
         evhttp_connection_free(http_conns_[i]);
@@ -74,8 +74,8 @@ public:
             unsigned short port,
             int conns=10); 
 
-  DonkeyHttpRequest *NewRequest() {
-    DonkeyHttpRequest *req = new DonkeyHttpRequest();
+  DKHttpRequest *NewRequest() {
+    DKHttpRequest *req = new DKHttpRequest();
     if (req && !req->Init()) {
       delete req;
       req = NULL;
@@ -105,6 +105,18 @@ public:
     }
   }
 
+  void SetLocalAddress(const char *address) {
+    for (size_t i = 0; i < http_conns_.size(); i++) {
+      evhttp_connection_set_local_address(http_conns_[i], address);
+    }
+  }
+
+  void SetLocalPort(int port) {
+    for (size_t i = 0; i < http_conns_.size(); i++) {
+      evhttp_connection_set_local_port(http_conns_[i], port);
+    }
+  }
+
   /* defined in <event2/http.h>
    * enum evhttp_cmd_type {
         EVHTTP_REQ_GET     = 1 << 0,
@@ -120,7 +132,7 @@ public:
     
     dk_http_req will be auto free after response
   */
-  bool SendRequest(DonkeyHttpRequest *dk_http_req,
+  bool SendRequest(DKHttpRequest *dk_http_req,
                   enum evhttp_cmd_type cmd_type,
                   const char *uri) {
     struct evhttp_connection *conn = get_http_conn();
@@ -132,7 +144,7 @@ public:
   }
 
 
-  virtual void CloseCallback(struct evhttp_connection *conn) {}
+  virtual void OnClose(struct evhttp_connection *conn) {}
 
 private:
   static void EventHttpCloseCb(struct evhttp_connection *conn, void *arg);

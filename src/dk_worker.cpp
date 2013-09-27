@@ -3,10 +3,10 @@
  * Copyright (C) lijian2@ucweb.com
  */
 
-#include "donkey_common.h"
-#include "donkey_worker.h"
+#include "dk_common.h"
+#include "dk_worker.h"
 
-int DonkeyWorker::ThreadRoutine() {
+int DKWorker::ThreadRoutine() {
 	int ret = 0;
 
   sem_t *asem = extern_event_sem_ ? extern_event_sem_ : &event_sem_;

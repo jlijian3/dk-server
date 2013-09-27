@@ -3,10 +3,10 @@
  * Copyright (C) lijian2@ucweb.com
  */
 
-#include "donkey_common.h"
-#include "donkey_base_thread.h"
+#include "dk_common.h"
+#include "dk_base_thread.h"
 
-void DonkeyBaseThread::Create() {
+void DKBaseThread::Create() {
   pthread_attr_t  attr;
   int             ret;
 
@@ -19,11 +19,11 @@ void DonkeyBaseThread::Create() {
   }
 }
 
-void *DonkeyBaseThread::PThreadRoutine(void *arg) {
+void *DKBaseThread::PThreadRoutine(void *arg) {
   assert(arg);
   int rv;
 
-  DonkeyBaseThread *me = (DonkeyBaseThread *)arg;
+  DKBaseThread *me = (DKBaseThread *)arg;
   rv = me->ThreadRoutine();
   pthread_exit((void *)&rv);
 }

@@ -3,10 +3,10 @@
  * Copyright (C) lijian2@ucweb.com
  */
 
-#include "donkey_common.h"
-#include "donkey_ev_thread.h"
+#include "dk_common.h"
+#include "dk_ev_thread.h"
 
-bool DonkeyEventThread::Init() {
+bool DKEventThread::Init() {
   base_ = event_base_new();
 
   if (!base_)
@@ -31,18 +31,18 @@ bool DonkeyEventThread::Init() {
   return true;
 }
 
-int DonkeyEventThread::ThreadRoutine() {
+int DKEventThread::ThreadRoutine() {
   return event_base_dispatch(base_);
 }
 
-void DonkeyEventThread::EventNotifyCb(int fd, short which, void *arg) {
-  DonkeyEventThread *worker = (DonkeyEventThread *)arg;
+void DKEventThread::EventNotifyCb(int fd, short which, void *arg) {
+  DKEventThread *worker = (DKEventThread *)arg;
   assert(worker);
   
   worker->NotifyCb(fd, which);
 }
 
-void DonkeyEventThread::NotifyCb(int fd, short which) {
+void DKEventThread::NotifyCb(int fd, short which) {
   assert(base_);
   char buf[1024];
 

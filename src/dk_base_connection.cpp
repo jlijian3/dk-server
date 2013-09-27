@@ -3,12 +3,12 @@
  * date:2012-03-08
  */
 
-#include "donkey_core.h"
-#include "donkey_util.h"
+#include "dk_core.h"
+#include "dk_util.h"
 
 using namespace std;
 
-int DonkeyBaseConnection::last_conn_id_;
+int DKBaseConnection::last_conn_id_;
 
 const char *DKCON_STATE_NAMES[] = {
     "DKCON_DISCONNECTED",
@@ -18,9 +18,8 @@ const char *DKCON_STATE_NAMES[] = {
     "DKCON_WRITING"
 };
 
-DonkeyBaseConnection::DonkeyBaseConnection()
-    : server_(NULL),
-      inited_(false), 
+DKBaseConnection::DKBaseConnection()
+    : inited_(false), 
       base_(NULL),
       port_(0),
       fd_(-1),
@@ -31,14 +30,16 @@ DonkeyBaseConnection::DonkeyBaseConnection()
       state_(DKCON_DISCONNECTED),
       kind_(CON_INCOMING),
       error_(DKCON_ERROR_NONE),
-      temp_output_buf_(NULL) {
+      temp_output_buf_(NULL),
+      bind_port_(0),
+      incoming_conn_free_cb_(NULL) {
 }
 
-DonkeyBaseConnection::~DonkeyBaseConnection() {
+DKBaseConnection::~DKBaseConnection() {
   Destruct();
 }
 
-void DonkeyBaseConnection::Destruct() {
+void DKBaseConnection::Destruct() {
   Reset();
   if (bufev_)
     bufferevent_free(bufev_);
@@ -46,7 +47,7 @@ void DonkeyBaseConnection::Destruct() {
     evbuffer_free(temp_output_buf_);
 }
 
-bool DonkeyBaseConnection::Init(struct event_base *base,
+bool DKBaseConnection::Init(struct event_base *base,
                                 int fd,
                                 const char *host,
                                 unsigned short port) {
@@ -102,7 +103,7 @@ bool DonkeyBaseConnection::Init(struct event_base *base,
   return true;
 }
 
-bool DonkeyBaseConnection::StartRead() {
+bool DKBaseConnection::StartRead() {
   assert(bufev_);
 
     /* Set up an event to read data */
@@ -124,7 +125,7 @@ bool DonkeyBaseConnection::StartRead() {
   return true;
 }
 
-bool DonkeyBaseConnection::StartWrite() {
+bool DKBaseConnection::StartWrite() {
   if (!IsConnected()) {
     DK_DEBUG("[warn] %s: not connected\n", __func__);
     return false;
@@ -132,22 +133,60 @@ bool DonkeyBaseConnection::StartWrite() {
 
   assert(bufev_);
 
+  if (evbuffer_get_length(get_output_buffer()) == 0)
+    return true;
+
   state_ = DKCON_WRITING; 
+
+  int res = TryWrite();
+  if (res < 0) {
+    Fail(DKCON_ERROR_ERRNO);
+    return false;
+  } else if (res == 0) {
+    Fail(DKCON_ERROR_EOF);
+    return false;
+  }
+
+  if (evbuffer_get_length(get_output_buffer()) == 0) {
+    WriteDone();
+    return true;
+  }
   EnableWrite();
 
 	/* Disable the read callback: we don't actually care about data;
 	 * we only care about close detection.  (We don't disable reading,
 	 * since we *do* want to learn about any close events.) */
+  /*
 	bufferevent_setcb(bufev_,
-	    NULL, /*read*/
+	    NULL,
 	    EventWriteCb,
 	    EventErrorCb,
 	    this);
+  */
   
   return true;
 }
 
-void DonkeyBaseConnection::ReadHandler() {
+static const int atmost = 16348;
+int DKBaseConnection::TryWrite() {
+  //return 1;
+  evbuffer_unfreeze(get_output_buffer(), 1);
+  int res = evbuffer_write(get_output_buffer(), fd_);
+  evbuffer_freeze(get_output_buffer(), 1);
+
+  if (res == -1) {
+    int err = evutil_socket_geterror(fd_);
+    if (err == EINTR || err == EAGAIN)
+      return 1;
+    else
+      return -1;
+  } else if (res == 0) {
+    return 0;
+  }
+  return 2;
+}
+
+void DKBaseConnection::ReadHandler() {
   if (!bufev_)
     return;
 
@@ -163,7 +202,7 @@ void DonkeyBaseConnection::ReadHandler() {
         state_ = DKCON_READING;
 
       while (!stop && nreqs-- > 0) {
-        read_status = ReadCallback();
+        read_status = OnRead();
 
         switch (read_status) {
         case READ_ALL_DATA:
@@ -197,7 +236,7 @@ void DonkeyBaseConnection::ReadHandler() {
   }
 }
 
-void DonkeyBaseConnection::ReadDone() {
+void DKBaseConnection::ReadDone() {
   if (kind_ == CON_OUTGOING) {
     set_state(DKCON_IDLE);
 
@@ -216,13 +255,13 @@ void DonkeyBaseConnection::ReadDone() {
   }
 }
 
-void DonkeyBaseConnection::WriteDone() {
-  WriteCallback();
+void DKBaseConnection::WriteDone() {
+  OnWrite();
 
   if (kind_ == CON_INCOMING) {
     if (!keep_alive()) {
       Reset(); 
-      AddToFreeConn();
+      FreeIncomingConn();
       return;
     }
     
@@ -235,26 +274,26 @@ void DonkeyBaseConnection::WriteDone() {
   }
 }
 
-void DonkeyBaseConnection::EventReadCb(struct bufferevent *bufev,
+void DKBaseConnection::EventReadCb(struct bufferevent *bufev,
                                    void *arg) {
-  DonkeyBaseConnection *conn = (DonkeyBaseConnection *)arg;
+  DKBaseConnection *conn = (DKBaseConnection *)arg;
   assert(conn);
 
   conn->ReadHandler();
 }
 
-void DonkeyBaseConnection::EventWriteCb(struct bufferevent *bufev,
+void DKBaseConnection::EventWriteCb(struct bufferevent *bufev,
                                     void *arg) {
-  DonkeyBaseConnection *conn = (DonkeyBaseConnection *)arg; 
+  DKBaseConnection *conn = (DKBaseConnection *)arg; 
   assert(conn);
 
   conn->WriteDone();
 }
 
-void DonkeyBaseConnection::EventErrorCb(struct bufferevent *bufev,
+void DKBaseConnection::EventErrorCb(struct bufferevent *bufev,
                                     short what, 
                                     void *arg) {
-  DonkeyBaseConnection *conn = (DonkeyBaseConnection *)arg; 
+  DKBaseConnection *conn = (DKBaseConnection *)arg; 
   assert(conn); 
 
   switch (conn->get_state()) {
@@ -273,7 +312,7 @@ void DonkeyBaseConnection::EventErrorCb(struct bufferevent *bufev,
   }
 
   if (what & (BEV_EVENT_TIMEOUT|BEV_EVENT_EOF|BEV_EVENT_ERROR)) {
-    DonkeyConnectionError error;
+    DKConnectionError error;
 
     if (what & BEV_EVENT_TIMEOUT) {
       error = DKCON_ERROR_TIMEOUT;
@@ -291,10 +330,10 @@ void DonkeyBaseConnection::EventErrorCb(struct bufferevent *bufev,
   }
 }
 
-void DonkeyBaseConnection::EventConnectCb(struct bufferevent *bufev,
+void DKBaseConnection::EventConnectCb(struct bufferevent *bufev,
                                       short what,
                                       void *arg) {
-  DonkeyBaseConnection *conn = (DonkeyBaseConnection *)arg;
+  DKBaseConnection *conn = (DKBaseConnection *)arg;
   int error;
 	ev_socklen_t errsz = sizeof(error);
 
@@ -326,13 +365,14 @@ cleanup:
   conn->ConnectFail(DKCON_ERROR_ERRNO);
 }
 
-void DonkeyBaseConnection::Fail(DonkeyConnectionError error) {
+void DKBaseConnection::Fail(DKConnectionError error) {
   error_ = error;
 
+  /*
   if (keep_alive() &&
       error == DKCON_ERROR_TIMEOUT &&
       state_ != DKCON_CONNECTING) {
-    ErrorCallback(error);
+    OnError(error);
     if (state_ == DKCON_WRITING)
       EnableWrite();
     else
@@ -341,32 +381,29 @@ void DonkeyBaseConnection::Fail(DonkeyConnectionError error) {
     error_ = DKCON_ERROR_NONE;
     return;
   }
-
+  */
   
   DK_DEBUG("[error] %s: %s for %s:%d on %d %s\n", __func__, StrError(error),
       get_host().c_str(), get_port(), get_fd(),
       DKCON_STATE_NAMES[get_state()]);
 
   DisableReadWrite();
-  ErrorCallback(error);
+  OnError(error);
   Reset();
 
   if (kind_ == CON_INCOMING) {
-    AddToFreeConn();
+    FreeIncomingConn();
     return;
-  } else {
-    ResetCallback();
   }
 }
 
-void DonkeyBaseConnection::ConnectFail(DonkeyConnectionError error) {
+void DKBaseConnection::ConnectFail(DKConnectionError error) {
   error_ = error;
-  ErrorCallback(error);
+  OnError(error);
   Reset();
-  ResetCallback();
 }
 
-void DonkeyBaseConnection::Reset() {
+void DKBaseConnection::Reset() {
   if (!bufev_)
     return;
 
@@ -377,7 +414,7 @@ void DonkeyBaseConnection::Reset() {
 
   if (fd_ != -1) {
     //if (IsConnected())
-      CloseCallback();
+      OnClose();
 
     shutdown(fd_, SHUT_WR);
     close(fd_);
@@ -401,7 +438,7 @@ void DonkeyBaseConnection::Reset() {
   error_ = DKCON_ERROR_NONE;
 }
 
-bool DonkeyBaseConnection::Connect() {
+bool DKBaseConnection::Connect() {
   if (state_ == DKCON_CONNECTING)
     return true;
 
@@ -425,7 +462,7 @@ bool DonkeyBaseConnection::Connect() {
   string ip;
 
   /* Libevent evget_addrinfo has a bug */
-  if (!DonkeyGetHostByName(host_, ip)) {
+  if (!DKGetHostByName(host_, ip)) {
     ConnectFail(DKCON_ERROR_ERRNO);
     return false;
   }
@@ -475,8 +512,8 @@ bool DonkeyBaseConnection::Connect() {
   return true;
 }
 
-void DonkeyBaseConnection::ConnectMade() {
-  ConnectedCallback();
+void DKBaseConnection::ConnectMade() {
+  OnConnect();
 
   if (kind_ == CON_OUTGOING) {
     set_state(DKCON_IDLE);
@@ -499,7 +536,7 @@ void DonkeyBaseConnection::ConnectMade() {
   }
 }
 
-void DonkeyBaseConnection::AddToFreeConn() {
-  if (server_)
-    server_->FreeConn(this);
+void DKBaseConnection::FreeIncomingConn() {
+  if (incoming_conn_free_cb_)
+    incoming_conn_free_cb_(this, incoming_conn_free_cb_arg_);
 }

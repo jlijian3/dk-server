@@ -6,18 +6,16 @@
 #ifndef __DONKEY_BASE_CONNECTION_INCLUDE__
 #define __DONKEY_BASE_CONNECTION_INCLUDE__
 
-#include "donkey_common.h"
-#include "donkey_internal.h"
-#include "donkey_util.h"
+#include "dk_common.h"
+#include "dk_internal.h"
+#include "dk_util.h"
 
 struct event_base;
 
-class DonkeyServer;
-
-class DonkeyBaseConnection {
+class DKBaseConnection {
 public:
-  DonkeyBaseConnection();
-  virtual ~DonkeyBaseConnection();
+  DKBaseConnection();
+  virtual ~DKBaseConnection();
   
   bool Init(struct event_base *base,
             int fd,
@@ -33,6 +31,7 @@ public:
 
   bool StartRead();
   bool StartWrite();
+  int TryWrite();
 
   void EnableRead() {
     int event = bufferevent_get_enabled(bufev_);
@@ -167,11 +166,11 @@ public:
     return port_;
   }
 
-  DonkeyConnectionState get_state() {
+  DKConnectionState get_state() {
     return state_;
   }
 
-  void set_state(DonkeyConnectionState state) {
+  void set_state(DKConnectionState state) {
     state_ = state; 
   }
 
@@ -179,7 +178,7 @@ public:
     return base_;
   }
 
-  DonkeyConnectionError get_error() {
+  DKConnectionError get_error() {
     return error_; 
   }
 
@@ -205,8 +204,16 @@ public:
     else
       bufferevent_settimeout(bufev_, DK_READ_TIMEOUT, DK_WRITE_TIMEOUT);
   }
+  
+  void set_bind_address(const char *address) {
+    bind_address_ = address;
+  }
+
+  void set_bind_port(int port) {
+    bind_port_ = port;
+  }
    
-  static const char *StrError(DonkeyConnectionError error) {
+  static const char *StrError(DKConnectionError error) {
     switch (error) {
     case DKCON_ERROR_TIMEOUT:
       return "connection timeout";
@@ -229,20 +236,25 @@ public:
     }
   }
 
+  void set_incoming_conn_free_cb(
+      void (*cb)(DKBaseConnection *, void *), void *arg) {
+    incoming_conn_free_cb_ = cb;
+    incoming_conn_free_cb_arg_ = arg;
+  }
+
 public:
-  void Fail(DonkeyConnectionError error);
-  void ConnectFail(DonkeyConnectionError error);
+  void Fail(DKConnectionError error);
+  void ConnectFail(DKConnectionError error);
 
 protected:
-  void AddToFreeConn();
+  void FreeIncomingConn();
 
-  virtual void ConnectedCallback() {}
-  virtual void CloseCallback() {} 
-  virtual void ErrorCallback(DonkeyConnectionError error) {}
-  virtual void WriteCallback() {}
-  virtual void ResetCallback() {}
+  virtual void OnConnect() {}
+  virtual void OnClose() {} 
+  virtual void OnError(DKConnectionError error) {}
+  virtual void OnWrite() {}
 
-  virtual enum READ_STATUS ReadCallback() {
+  virtual enum READ_STATUS OnRead() {
     evbuffer_drain(bufferevent_get_input(bufev_), -1); 
     return READ_ALL_DATA; 
   } 
@@ -266,9 +278,6 @@ private:
                              short which,
                              void *arg);  
 
-public:
-   DonkeyServer     *server_; 
-
 protected:
   bool               inited_;
   struct event_base *base_;
@@ -280,13 +289,17 @@ protected:
   int                id_;
 
   struct bufferevent      *bufev_;
-  DonkeyConnectionState    state_;
-  DonkeyConnectionKind     kind_;
-  DonkeyConnectionError    error_;
+  DKConnectionState    state_;
+  DKConnectionKind     kind_;
+  DKConnectionError    error_;
   struct evbuffer         *temp_output_buf_;
 
 private:
-  static int last_conn_id_;  
+  static int last_conn_id_;
+  std::string bind_address_;
+  int         bind_port_;
+  void      (*incoming_conn_free_cb_)(DKBaseConnection *, void *);
+  void       *incoming_conn_free_cb_arg_;
 };
 
 #endif

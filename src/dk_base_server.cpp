@@ -3,37 +3,37 @@
  * date:2012-03-08
  */
 
-#include "donkey_core.h"
-#include "donkey_log.h"
+#include "dk_core.h"
+#include "dk_log.h"
 
 using namespace std;
 using namespace __gnu_cxx; 
 
-log_func_t DonkeyLog::log_func_ = NULL;
-FILE *DonkeyLog::fstream_ = NULL;
+log_func_t DKLog::log_func_ = NULL;
+FILE *DKLog::fstream_ = NULL;
 
-unsigned int DonkeyServer::current_time_;
+unsigned int DKBaseServer::current_time_;
 
-DonkeyServer::DonkeyServer()
+DKBaseServer::DKBaseServer()
     : listener_(NULL),
       signal_event_(NULL),
       timeout_(-1) {
 }
 
-DonkeyServer::~DonkeyServer() {
+DKBaseServer::~DKBaseServer() {
   if (listener_)
     evconnlistener_free(listener_);
   if (signal_event_)
     event_free(signal_event_);
 }
 
-bool DonkeyServer::Init() {
-  DonkeyEventThread::Init();
+bool DKBaseServer::Init() {
+  DKEventThread::Init();
   ClockHandler(0, 0, this);
   return true;
 }
 
-bool DonkeyServer::StartListenTCP(const char *address,
+bool DKBaseServer::StartListenTCP(const char *address,
                                   unsigned short port,
                                   int backlog) {
   if (!base_)
@@ -60,14 +60,14 @@ bool DonkeyServer::StartListenTCP(const char *address,
   return true;
 }
 
-int DonkeyServer::EventLoop() {
+int DKBaseServer::EventLoop() {
   return ThreadRoutine();
 }
 
-bool DonkeyServer::MakeConnection(int fd,
+bool DKBaseServer::MakeConnection(int fd,
                                   const char *host,
                                   unsigned short port) {
-  DonkeyBaseConnection *conn = NULL;  
+  DKBaseConnection *conn = NULL;  
   if (free_conns_.empty()) {
     conn = NewConnection();
   } else {
@@ -88,9 +88,9 @@ bool DonkeyServer::MakeConnection(int fd,
     return false;
   }
 
-  hash_map<int, DonkeyBaseConnection *>::iterator it = conns_map_.find(conn->get_id());
+  hash_map<int, DKBaseConnection *>::iterator it = conns_map_.find(conn->get_id());
   if (it != conns_map_.end() && it->second != NULL) {
-    DonkeyBaseConnection *old_conn = it->second;
+    DKBaseConnection *old_conn = it->second;
     DK_DEBUG("[error] %s: conn_id %d fd %d already exists in conns_map_\n",
              __func__, old_conn->get_id(), old_conn->get_fd());
     conn->Reset();
@@ -99,7 +99,7 @@ bool DonkeyServer::MakeConnection(int fd,
   } else
     conns_map_[conn->get_id()] = conn;
 
-  conn->server_ = this;
+  conn->set_incoming_conn_free_cb(IncomingConnFreeCallback, this);
 
   ConnectionMade(conn);
 
@@ -109,12 +109,12 @@ bool DonkeyServer::MakeConnection(int fd,
   return conn->StartRead();
 }
 
-void DonkeyServer::ListenerCallback(struct evconnlistener *listener,
+void DKBaseServer::ListenerCallback(struct evconnlistener *listener,
                                     evutil_socket_t fd,
                                     struct sockaddr *sa,
                                     int salen,
                                     void *arg) {
-  DonkeyServer *server = (DonkeyServer *)arg;
+  DKBaseServer *server = (DKBaseServer *)arg;
   assert(server);
 
   char ntop[NI_MAXHOST];
@@ -130,12 +130,12 @@ void DonkeyServer::ListenerCallback(struct evconnlistener *listener,
     DK_DEBUG("[error] %s MakeConnection failed\n", __func__);
 }
 
-void DonkeyServer::ClockHandler(int fd, short which, void *arg) {
+void DKBaseServer::ClockHandler(int fd, short which, void *arg) {
   static struct event clockevent;
   static bool initialized = false;
    
   struct timeval t;
-  DonkeyServer *server = (DonkeyServer *)arg;
+  DKBaseServer *server = (DKBaseServer *)arg;
   assert(server);
   assert(server->get_base());
 
@@ -160,12 +160,19 @@ void DonkeyServer::ClockHandler(int fd, short which, void *arg) {
   evtimer_add(&clockevent, &t);
 }
 
-void DonkeyServer::FreeConn(DonkeyBaseConnection *conn) {
+void DKBaseServer::IncomingConnFreeCallback(
+    DKBaseConnection *conn, void *arg) {
+  DKBaseServer *me = (DKBaseServer *)arg;
+  if (me)
+    me->FreeConn(conn);
+}
+
+void DKBaseServer::FreeConn(DKBaseConnection *conn) {
   if (!conn)
     return;
 
  
-  hash_map<int, DonkeyBaseConnection *>::iterator it = conns_map_.find(conn->get_id());
+  hash_map<int, DKBaseConnection *>::iterator it = conns_map_.find(conn->get_id());
 
   if (it == conns_map_.end()) {
     DK_DEBUG("[error] %s: conn_id %d fd %d not exists in conns_map_\n",
@@ -179,14 +186,14 @@ void DonkeyServer::FreeConn(DonkeyBaseConnection *conn) {
     free_conns_.push_back(conn);
 }
 
-DonkeyBaseConnection *DonkeyServer::get_conn(int conn_id) {
-  hash_map<int, DonkeyBaseConnection *>::iterator it = conns_map_.find(conn_id);
+DKBaseConnection *DKBaseServer::get_conn(int conn_id) {
+  hash_map<int, DKBaseConnection *>::iterator it = conns_map_.find(conn_id);
   if (it != conns_map_.end())
     return it->second;
   else
     return NULL;
 }
 
-DonkeyBaseConnection *DonkeyServer::NewConnection() {
-  return new DonkeyBaseConnection(); 
+DKBaseConnection *DKBaseServer::NewConnection() {
+  return new DKBaseConnection(); 
 }

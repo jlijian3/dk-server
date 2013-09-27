@@ -8,7 +8,7 @@
 
 #include <vector>
 
-#include "donkey_core.h"
+#include "dk_core.h"
 
 class ThreadPool {
 public:
@@ -23,7 +23,7 @@ public:
   bool CallInThread(deferred_cb_fn cb, void *arg);
 
 private:
-  std::vector<DonkeyWorker>   workers_;
+  std::vector<DKWorker>   workers_;
   sem_t                       sem_;
   LockQueue<DeferredCb>       que_;
 };

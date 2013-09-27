@@ -11,7 +11,7 @@
 
 typedef void (*log_func_t)(const char *msg, int msg_len);
 
-class DonkeyLog {
+class DKLog {
 public: 
   static void Debug(const char *format, ...) {
     va_list va;
@@ -49,6 +49,6 @@ private:
   static FILE *fstream_;
 };
 
-#define DK_DEBUG(args...) DonkeyLog::Debug(args)
+#define DK_DEBUG(args...) DKLog::Debug(args)
 
 #endif

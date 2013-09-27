@@ -4,12 +4,12 @@
  * date:2012-03-08
  */
 
-#include "donkey_util.h"
-#include "donkey_log.h"
+#include "dk_util.h"
+#include "dk_log.h"
 
 using namespace std;
 
-bool DonkeyGetHostByName(const string &host, string &ip) {
+bool DKGetHostByName(const string &host, string &ip) {
   struct hostent hent, *ent;
   char buf[2048];
   int err;
@@ -32,7 +32,7 @@ bool DonkeyGetHostByName(const string &host, string &ip) {
   return true;
 }
 
-bool DonkeyGetHostName(std::string &host) {
+bool DKGetHostName(std::string &host) {
   char buf[NI_MAXHOST];
   if (gethostname(buf, sizeof(buf)) == 0) {
     host.assign(buf, strlen(buf));
@@ -41,8 +41,8 @@ bool DonkeyGetHostName(std::string &host) {
   return false;
 }
 
-bool DonkeyGetHostIp(std::string &ip) {
+bool DKGetHostIp(std::string &ip) {
   string host;
-  DonkeyGetHostName(host);
-  return DonkeyGetHostByName(host, ip);
+  DKGetHostName(host);
+  return DKGetHostByName(host, ip);
 }

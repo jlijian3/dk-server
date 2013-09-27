@@ -6,7 +6,7 @@
 #ifndef __DONKEY_INTERVAL_INCLUDE__
 #define __DONKEY_INTERVAL_INCLUDE__
 
-class DonkeyBaseThread;
+class DKBaseThread;
 
 enum READ_STATUS {
   READ_BAD_CLIENT,
@@ -16,7 +16,7 @@ enum READ_STATUS {
   READ_INNER_ERROR
 };
 
-enum DonkeyConnectionKind {
+enum DKConnectionKind {
   CON_INCOMING,
   CON_OUTGOING
 };
@@ -25,7 +25,7 @@ enum DonkeyConnectionKind {
 #define DK_READ_TIMEOUT    50
 #define DK_WRITE_TIMEOUT   50
 
-enum DonkeyConnectionState {
+enum DKConnectionState {
   DKCON_DISCONNECTED,
   DKCON_CONNECTING,
   DKCON_IDLE,
@@ -33,7 +33,7 @@ enum DonkeyConnectionState {
   DKCON_WRITING
 };
 
-enum DonkeyConnectionError {
+enum DKConnectionError {
   DKCON_ERROR_NONE, 
   DKCON_ERROR_TIMEOUT,
   DKCON_ERROR_EOF,
@@ -42,7 +42,7 @@ enum DonkeyConnectionError {
   DKCON_ERROR_PARSE_ERROR
 };
 
-typedef void (*deferred_cb_fn)(DonkeyBaseThread *thread, void *arg);
+typedef void (*deferred_cb_fn)(DKBaseThread *thread, void *arg);
 
 class DeferredCb {
 public:
@@ -50,7 +50,7 @@ public:
       : cb_(cb), arg_(arg) {
   }
 
-  void Call(DonkeyBaseThread *thread) {
+  void Call(DKBaseThread *thread) {
     if (cb_)
       cb_(thread, arg_);
   }

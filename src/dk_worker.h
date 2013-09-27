@@ -7,12 +7,12 @@
 #define __DONKEY_WORKER__INCLUDE__
 
 #include "queue.h"
-#include "donkey_base_thread.h"
-#include "donkey_internal.h"
+#include "dk_base_thread.h"
+#include "dk_internal.h"
 
-class DonkeyWorker : public DonkeyBaseThread {
+class DKWorker : public DKBaseThread {
 public:
-  DonkeyWorker()
+  DKWorker()
       : stop_(false),
         extern_event_sem_(NULL),
         extern_pending_cbs_(NULL) {
@@ -22,7 +22,7 @@ public:
     return 0 == sem_init(&event_sem_, 0, 0); 
   }
 
-  virtual ~DonkeyWorker() {
+  virtual ~DKWorker() {
   }
 
   virtual bool Stop() {

@@ -3,19 +3,19 @@
  * date:2012-03
  */
 
-#include "donkey_core.h"
+#include "dk_core.h"
 using namespace std;
 
 
-/*********** DonkeyHttpRequest ************/
+/*********** DKHttpRequest ************/
 
-void DonkeyHttpRequest::HandleResponse(struct evhttp_request *req, void *arg) {
+void DKHttpRequest::HandleResponse(struct evhttp_request *req, void *arg) {
   DebugResponse(req);
 }
 
-void DonkeyHttpRequest::EventHttpRequestCb(
+void DKHttpRequest::EventHttpRequestCb(
     struct evhttp_request *req, void *arg) {
-  DonkeyHttpRequest *http_req = (DonkeyHttpRequest *)arg;
+  DKHttpRequest *http_req = (DKHttpRequest *)arg;
   
   if (http_req) {
     http_req->DoHandleResponse(req);
@@ -23,7 +23,7 @@ void DonkeyHttpRequest::EventHttpRequestCb(
   }
 }
 
-void DonkeyHttpRequest::DebugResponse(struct evhttp_request *req) {
+void DKHttpRequest::DebugResponse(struct evhttp_request *req) {
   if (!req)
     return;
   
@@ -55,7 +55,7 @@ void DonkeyHttpRequest::DebugResponse(struct evhttp_request *req) {
   DK_DEBUG("<<<<<<<<<<<\n"); 
 }
 
-void DonkeyHttpRequest::DebugRequest(struct evhttp_request *req) {
+void DKHttpRequest::DebugRequest(struct evhttp_request *req) {
   if (!req)
     return; 
   struct evkeyvalq *headers = evhttp_request_get_output_headers(req);
@@ -64,7 +64,7 @@ void DonkeyHttpRequest::DebugRequest(struct evhttp_request *req) {
   DK_DEBUG("<<<<<<<<<<<\n");
 }
 
-void DonkeyHttpRequest::DebugHeaders(struct evkeyvalq *headers) {
+void DKHttpRequest::DebugHeaders(struct evkeyvalq *headers) {
   struct evkeyval *header;
   string s_headers = "Http headers:\n";
   
@@ -83,9 +83,9 @@ void DonkeyHttpRequest::DebugHeaders(struct evkeyvalq *headers) {
 }
 
 
-/*********** DonkeyHttpClient ************/
+/*********** DKHttpClient ************/
 
-bool DonkeyHttpClient::Init(
+bool DKHttpClient::Init(
     struct event_base *evbase, const char *host, unsigned short port, int conns) {
   if (!http_conns_.empty())
     return false;
@@ -99,7 +99,7 @@ bool DonkeyHttpClient::Init(
   string ip;
 
   /* Libevent evget_addrinfo has a bug */
-  DonkeyGetHostByName(host, ip);
+  DKGetHostByName(host, ip);
   if (ip.empty())
     ip = host;
 
@@ -119,11 +119,11 @@ bool DonkeyHttpClient::Init(
   return true;
 }
 
-void DonkeyHttpClient::EventHttpCloseCb(struct evhttp_connection *conn, void *arg) {
-  DonkeyHttpClient *http_client = (DonkeyHttpClient *)arg;
+void DKHttpClient::EventHttpCloseCb(struct evhttp_connection *conn, void *arg) {
+  DKHttpClient *http_client = (DKHttpClient *)arg;
   
   if (http_client) 
-    http_client->CloseCallback(conn);
+    http_client->OnClose(conn);
 }
 
 

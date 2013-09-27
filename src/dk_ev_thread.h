@@ -7,17 +7,17 @@
 #define __DONKEY_EVENT_THREAD__INCLUDE__
 
 #include "queue.h"
-#include "donkey_base_thread.h"
-#include "donkey_internal.h"
+#include "dk_base_thread.h"
+#include "dk_internal.h"
 
-class DonkeyEventThread : public DonkeyBaseThread {
+class DKEventThread : public DKBaseThread {
 public:
-  DonkeyEventThread() : base_(NULL) {
+  DKEventThread() : base_(NULL) {
   }
 
   bool Init();
 
-  virtual ~DonkeyEventThread() {
+  virtual ~DKEventThread() {
     if (base_)
       event_base_free(base_);
   }
