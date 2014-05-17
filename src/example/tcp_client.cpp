@@ -51,39 +51,12 @@ void send_tcp_request(const void *data, int len) {
       return;
     }
    
-    int fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (fd == -1) {
-      perror("socket()");
-      return;
-    }
-
-    if (evutil_make_socket_nonblocking(fd) < 0)
-	    return;
-
-    struct sockaddr_in addr;
-    int flags = 1;
-    memset(&addr, 0, sizeof(addr));
-
-    addr.sin_family = AF_INET;
-    inet_aton("127.0.0.1", &addr.sin_addr);
-    addr.sin_port = htons(8001);
-    
-    //setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void *)&flags, sizeof(flags));
-
-    if (bind(fd,
-             (struct sockaddr *)&addr,
-             sizeof(addr)) == -1) 
-    {
-      perror("bind");
-      return;
-    }
-    
-    bool res = my_conn->Init(server->get_base(), fd, HOST, PORT);
+    bool res = my_conn->Init(server->get_base(), -1, HOST, PORT);
     my_conn->Connect();
     if (!res) {
       delete my_conn;
       my_conn = NULL;
-      dlog1("ps_conn_->Init failed\n");
+      dlog1("my_conn_->Init failed\n");
       return;
     }
     my_conn->set_timeout(10);
