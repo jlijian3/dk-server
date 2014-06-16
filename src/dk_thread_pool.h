@@ -1,6 +1,6 @@
 
 /*
- * Copyright (C) lijian2@ucweb.com
+ * Copyright (C) jlijian3@gmail.com
  */
 
 #ifndef __DKINNER_THREAD_POOL_INCLUDE__

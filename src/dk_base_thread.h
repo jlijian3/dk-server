@@ -1,6 +1,6 @@
 
 /*
- * Copyright (C) lijian2@ucweb.com
+ * Copyright (C) jlijian3@gmail.com
  */
 
 #ifndef __DONKEY_BASE_THREAD_INCLUDE__

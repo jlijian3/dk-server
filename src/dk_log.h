@@ -1,5 +1,5 @@
 /**
- * author:lijian2@ucweb.com
+ * author:jlijian3@gmail.com
  * date:2012-03-22
  */
 
